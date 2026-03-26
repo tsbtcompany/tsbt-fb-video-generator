@@ -243,7 +243,11 @@ def generate_storyboard_cloud(brand, model_name, year, language="Korean"):
     Scene 2 (Core Specs): "CORE SPECIFICATIONS". body_text에 11~14 스펙 전부. "라벨 | 값 단위" 형식.
     Scene 3 (Trim Lineup): "TRIM LINEUP". body_text에 트림 4~5개 + 파워트레인 요약.
     Scene 4 (Safety): "SAFETY & STRUCTURE". body_text 5개: 에어백, KNCAP, IIHS, AHSS%, 추가 안전팩트.
-    Scene 5 (Ownership): "OWNERSHIP VALUE". body_text 7~8개 유지비 항목.
+    Scene 5 (Ownership): "OWNERSHIP VALUE". body_text 7~8개. CRITICAL: This content targets GLOBAL export buyers. 
+        DO NOT include country-specific data (no Korean 자동차세, no local currency prices, no local service center info).
+        Instead use UNIVERSAL maintenance specs: 연비(복합), 엔진오일 규격(예: 5W-30) + 교환주기(km), 타이어 규격(예: 225/45R17) + 교환주기(km), 
+        브레이크패드 교환주기(km), 냉각수/미션오일 교환주기, 소모품 수급 난이도(글로벌 기준 1~5), 감가상각 특성.
+        Format: "라벨 | 값" (예: "엔진오일 규격 | 5W-30, 매 10,000km").
     Scene 6 (Issues): "KNOWN ISSUES". body_text 5~6개 이슈 + 안심 메시지.
     Scene 7 (Expert): "EXPERT ANALYSIS". body_text 6개: TSBT 점수, 장점 3, 단점 2.
     Scene 8 (Outro): caption "TSBT — 세상의 모든 자동차 데이터". body_text 빈 배열 [].
