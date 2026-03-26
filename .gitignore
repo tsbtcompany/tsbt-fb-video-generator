@@ -1,0 +1,5 @@
+# TSBT Video Generator (Cloud App)
+.streamlit/secrets.toml
+__pycache__/
+*.pyc
+.env
