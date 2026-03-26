@@ -9,6 +9,10 @@ Deploy to Streamlit Community Cloud for free multi-PC access.
 import streamlit as st
 import json
 import httpx
+import os
+import sys
+import subprocess
+from pathlib import Path
 
 # ═══════════════════════════════════════════════════
 # Supabase REST Helper (lightweight, no SDK needed)
@@ -362,21 +366,71 @@ for idx, tab in enumerate(tabs):
 
 st.markdown("---")
 
-# ── Download JSON ──
-col_dl, col_help = st.columns(2)
-with col_dl:
-    json_str = json.dumps(data, indent=2, ensure_ascii=False)
-    safe_title = (data.get("title", "output") or "output")[:20].replace(" ", "_").replace("/", "_")
-    st.download_button(
-        "📥 JSON 다운로드 (렌더링용)",
-        data=json_str,
-        file_name=f"storyboard_{safe_title}.json",
-        mime="application/json",
-        use_container_width=True,
-        type="primary",
-    )
-with col_help:
-    st.info("💡 렌더링 PC에서:\n`py render_video.py --input 파일.json`")
+# ═══════════════════════════════════════════════════
+# BOTTOM ACTIONS — Unified Local/Cloud
+# ═══════════════════════════════════════════════════
+
+# Detect local rendering environment
+RENDER_SCRIPT = Path(__file__).parent.parent / "render_video.py"
+IS_LOCAL = RENDER_SCRIPT.exists()
+
+json_str = json.dumps(data, indent=2, ensure_ascii=False)
+safe_title = (data.get("title", "output") or "output")[:20].replace(" ", "_").replace("/", "_")
+
+if IS_LOCAL:
+    # ── LOCAL MODE: Full pipeline ──
+    st.success("🖥️ **로컬 렌더링 모드** — 이 PC에서 영상 렌더링이 가능합니다!")
+    col_json, col_render = st.columns(2)
+    
+    with col_json:
+        st.download_button(
+            "📥 JSON 다운로드",
+            data=json_str,
+            file_name=f"storyboard_{safe_title}.json",
+            mime="application/json",
+            use_container_width=True,
+        )
+    
+    with col_render:
+        output_name = st.text_input("출력 파일명", value=f"{safe_title}.mp4", label_visibility="collapsed")
+        if st.button("🎬 영상 렌더링", use_container_width=True, type="primary"):
+            # Save temp JSON
+            temp_json = Path(__file__).parent.parent / "_cloud_render_temp.json"
+            with open(temp_json, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            
+            output_path = Path(__file__).parent.parent / output_name
+            
+            with st.spinner("🔄 Remotion 렌더링 중... (약 2~3분 소요)"):
+                cmd = [sys.executable, str(RENDER_SCRIPT), "--input", str(temp_json), "--output", str(output_path)]
+                result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(RENDER_SCRIPT.parent))
+                
+                if result.returncode == 0 and output_path.exists():
+                    st.success(f"✅ 렌더링 완료!")
+                    with open(output_path, "rb") as f:
+                        st.download_button(
+                            "📥 MP4 다운로드",
+                            data=f.read(),
+                            file_name=output_name,
+                            mime="video/mp4",
+                            use_container_width=True,
+                        )
+                else:
+                    st.error(f"렌더링 실패:\n{result.stderr[:500] if result.stderr else 'Unknown error'}")
+else:
+    # ── CLOUD MODE: JSON download only ──
+    col_dl, col_help = st.columns(2)
+    with col_dl:
+        st.download_button(
+            "📥 JSON 다운로드 (렌더링용)",
+            data=json_str,
+            file_name=f"storyboard_{safe_title}.json",
+            mime="application/json",
+            use_container_width=True,
+            type="primary",
+        )
+    with col_help:
+        st.info("💡 렌더링 PC에서:\n`py render_video.py --input 파일.json`")
 
 st.markdown("---")
-st.caption("TSBT Video Generator v2.0 (Cloud) — Supabase + Gemini + Remotion")
+st.caption(f"TSBT Video Generator v2.0 {'(Local 🖥️)' if IS_LOCAL else '(Cloud ☁️)'} — Supabase + Gemini + Remotion")
