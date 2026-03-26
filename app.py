@@ -14,25 +14,28 @@ import httpx
 # Supabase REST Helper (lightweight, no SDK needed)
 # ═══════════════════════════════════════════════════
 def supabase_query(table: str, select: str = "*", filters: dict = None, ilike: dict = None, limit: int = 1000):
-    """Execute a Supabase REST API query using httpx."""
-    url = f"{st.secrets['SUPABASE_URL']}/rest/v1/{table}"
-    headers = {
-        "apikey": st.secrets["SUPABASE_KEY"],
-        "Authorization": f"Bearer {st.secrets['SUPABASE_KEY']}",
-        "Content-Type": "application/json",
-        "Prefer": "return=representation",
-    }
-    params = {"select": select, "limit": str(limit)}
-    if filters:
-        for col, val in filters.items():
-            params[col] = f"eq.{val}"
-    if ilike:
-        for col, val in ilike.items():
-            params[col] = f"ilike.*{val}*"
-    
-    resp = httpx.get(url, headers=headers, params=params, timeout=15)
-    resp.raise_for_status()
-    return resp.json()
+    """Execute a Supabase REST API query using httpx. Returns [] on error."""
+    try:
+        url = f"{st.secrets['SUPABASE_URL']}/rest/v1/{table}"
+        headers = {
+            "apikey": st.secrets["SUPABASE_KEY"],
+            "Authorization": f"Bearer {st.secrets['SUPABASE_KEY']}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+        }
+        params = {"select": select, "limit": str(limit)}
+        if filters:
+            for col, val in filters.items():
+                params[col] = f"eq.{val}"
+        if ilike:
+            for col, val in ilike.items():
+                params[col] = f"ilike.*{val}*"
+        
+        resp = httpx.get(url, headers=headers, params=params, timeout=15)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception:
+        return []
 
 # ═══════════════════════════════════════════════════
 # Constants
