@@ -97,12 +97,34 @@ st.markdown("""
 # ═══════════════════════════════════════════════════
 @st.cache_data(ttl=600)
 def load_brand_model_year():
-    """Load distinct brand → model → year hierarchy from Supabase."""
-    data = supabase_query("1_02_tsbt_trims", select="brand,model_name,year", limit=30000)
+    """Load distinct brand → model → year hierarchy from Supabase (paginated)."""
+    url = f"{st.secrets['SUPABASE_URL']}/rest/v1/1_02_tsbt_trims"
+    headers = {
+        "apikey": st.secrets["SUPABASE_KEY"],
+        "Authorization": f"Bearer {st.secrets['SUPABASE_KEY']}",
+        "Content-Type": "application/json",
+        "Prefer": "count=exact",
+    }
+    
+    all_rows = []
+    page_size = 1000
+    offset = 0
+    
+    while True:
+        h = {**headers, "Range": f"{offset}-{offset + page_size - 1}"}
+        resp = httpx.get(url, headers=h, params={"select": "brand,model_name,year"}, timeout=20)
+        resp.raise_for_status()
+        batch = resp.json()
+        if not batch:
+            break
+        all_rows.extend(batch)
+        if len(batch) < page_size:
+            break
+        offset += page_size
     
     hierarchy = {}
     seen = set()
-    for row in data:
+    for row in all_rows:
         key = (row.get("brand"), row.get("model_name"), row.get("year"))
         if None in key or key in seen:
             continue
